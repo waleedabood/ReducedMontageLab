@@ -1,0 +1,1238 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reduced Montage Lab</title>
+  <meta name="description" content="Compare a full 10-20 longitudinal bipolar EEG with reduced bipolar montages (subhairline band, frontal only, behind the ear) on one synchronized synthetic recording.">
+  <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNyIgZmlsbD0iIzEyM0YzNSIvPjxwYXRoIGQ9Ik00IDE4aDRsMi02IDMgMTEgMy0xNCAzIDEyIDItNSAyIDJoNSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRTNDMTY0IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjxsaW5lIHgxPSIyMiIgeTE9IjUiIHgyPSIyMiIgeTI9IjI3IiBzdHJva2U9IiNGRkZGRkYiIHN0cm9rZS13aWR0aD0iMS41IiBvcGFjaXR5PSIuOCIvPjwvc3ZnPgo=" type="image/svg+xml">
+  <style>
+/*
+ * Reduced Montage Lab styles. Tokens follow the EEGSimLab design system (ui-system.css): forest brand, white EEG
+ * paper, system fonts, 4-pt spacing. Two themes: light (default) and dim room, chosen with data-theme on <html>.
+ * Canvas colours are read from the --fig-* tokens by app.js.
+ */
+:root {
+  --bg: #F3F5F1;
+  --surface: #FFFFFF;
+  --surface-subtle: #F7F9F5;
+  --text-1: #17261F;
+  --text-2: #3E5047;
+  --text-3: #56685E;
+  --border: #D5DDD6;
+  --border-control: #7A8C81;
+  --brand: #123F35;
+  --brand-hover: #0B2E26;
+  --brand-tint: #E5EFE8;
+  --on-brand: #FFFFFF;
+  --accent: #E3C164;
+  --focus: #1A5FB4;
+  --info: #1F5A92;
+  --success: #2D6A45;
+  --warning: #8A5300;
+  --neutral: #4E5F56;
+  --bar-full: #123F35;
+  --bar-reduced: #B07A12;
+  --fig-paper: #FFFFFF;
+  --fig-trace: #101814;
+  --fig-label: #3E5047;
+  --fig-channel: #17261F;
+  --fig-grid-major: #B9C4BC;
+  --fig-grid-minor: #E7ECE8;
+  --fig-cursor: #C62828;
+  --fig-accent: #1F5A92;
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --radius: 8px;
+  --shadow: 0 1px 3px rgb(16 24 20 / .10);
+  color-scheme: light;
+}
+:root[data-theme="dim"] {
+  --bg: #0F1714;
+  --surface: #16211C;
+  --surface-subtle: #1A2721;
+  --text-1: #E7EEE9;
+  --text-2: #B7C4BC;
+  --text-3: #93A39A;
+  --border: #2C3B34;
+  --border-control: #7D9085;
+  --brand: #7CC8A4;
+  --brand-hover: #9AD8BA;
+  --brand-tint: #1C3A2E;
+  --on-brand: #0F1714;
+  --focus: #8AB4F8;
+  --info: #8AB4F8;
+  --success: #81C995;
+  --warning: #E8B04B;
+  --neutral: #B7C4BC;
+  --bar-full: #7CC8A4;
+  --bar-reduced: #E8B04B;
+  --fig-paper: #121B17;
+  --fig-trace: #DDE6E0;
+  --fig-label: #B7C4BC;
+  --fig-channel: #E7EEE9;
+  --fig-grid-major: #4A5A52;
+  --fig-grid-minor: #24302A;
+  --fig-cursor: #FF8A80;
+  --fig-accent: #8AB4F8;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text-1);
+  font: 14px/1.43 var(--font-sans);
+  display: grid; grid-template-rows: auto auto minmax(0, 1fr);
+  min-height: 560px;
+}
+h1, h2, h3, p { margin: 0; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* Top bar: every control on one wrapping row */
+.bar {
+  display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap;
+  padding: 8px 16px; background: var(--surface); border-bottom: 1px solid var(--border);
+  position: relative; z-index: 3;
+}
+.brand { display: flex; align-items: center; gap: 8px; }
+.brand h1 { font-size: 15px; line-height: 1.2; white-space: nowrap; }
+.bar label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-2); font-weight: 600; }
+.bar select {
+  font: 13px var(--font-sans); height: 32px; padding: 0 6px; border-radius: 6px;
+  border: 1px solid var(--border-control); background: var(--surface); color: var(--text-1);
+}
+.bar .check { font-weight: 500; }
+.clock { font: 600 13px var(--font-mono); color: var(--text-2); min-width: 56px; text-align: right; }
+.btn {
+  font: 600 13px/1 var(--font-sans); height: 32px; padding: 0 12px; border-radius: var(--radius);
+  border: 1px solid var(--border-control); background: var(--surface); color: var(--text-1); cursor: pointer;
+  display: inline-flex; align-items: center;
+}
+.btn.primary { background: var(--brand); border-color: var(--brand); color: var(--on-brand); min-width: 72px; justify-content: center; }
+.btn.primary:hover { background: var(--brand-hover); }
+.btn.ghost { background: transparent; }
+.seg { display: inline-flex; border: 1px solid var(--border-control); border-radius: var(--radius); overflow: hidden; }
+.seg button {
+  font: 600 13px/1 var(--font-sans); height: 30px; padding: 0 12px; border: 0; border-right: 1px solid var(--border);
+  background: var(--surface); color: var(--text-2); cursor: pointer;
+}
+.seg button:last-child { border-right: 0; }
+.seg button[aria-checked="true"] { background: var(--brand); color: var(--on-brand); }
+
+/* Dropdown panels for every explanation */
+.menus { display: flex; gap: 6px; margin-left: auto; }
+.menu { position: relative; }
+.menu summary { list-style: none; gap: 6px; }
+.menu summary::-webkit-details-marker { display: none; }
+.menu summary::after { content: ""; width: 6px; height: 6px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: translateY(-2px) rotate(45deg); }
+.menu[open] summary { background: var(--brand-tint); border-color: var(--brand); color: var(--brand); }
+.panel {
+  position: absolute; right: 0; top: calc(100% + 6px); width: min(420px, calc(100vw - 32px));
+  max-height: calc(100vh - 120px); overflow: auto;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: 0 8px 32px rgb(16 24 20 / .18); padding: 14px 16px; display: grid; gap: 8px;
+}
+.panel.wide { width: min(480px, calc(100vw - 32px)); }
+.panel h3 { font-size: 14px; }
+.panel .sub { font-size: 12px; color: var(--text-3); }
+.panel ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; color: var(--text-2); font-size: 13px; }
+.panel .disclaimer { border-top: 1px solid var(--border); padding-top: 8px; }
+.bars { display: grid; gap: 12px; }
+.bar-group h4 { margin: 0 0 4px; font-size: 13px; display: flex; justify-content: space-between; gap: 8px; }
+.bar-group h4 .pct { font: 700 13px var(--font-mono); }
+.bar-row { display: grid; grid-template-columns: 92px 1fr 140px; gap: 8px; align-items: center; font-size: 12px; color: var(--text-2); }
+.bar-row .track { height: 10px; background: var(--surface-subtle); border: 1px solid var(--border); border-radius: 5px; overflow: hidden; }
+.bar-row .fill { display: block; height: 100%; border-radius: 5px; }
+.bar-row .val { font-family: var(--font-mono); text-align: right; white-space: nowrap; }
+
+/* Overview timeline */
+.timeline {
+  position: relative; height: 20px; margin: 6px 16px; border-radius: 6px; background: var(--surface);
+  border: 1px solid var(--border); cursor: pointer; overflow: hidden;
+}
+.timeline .tick { position: absolute; top: 3px; bottom: 3px; width: 3px; border-radius: 2px; transform: translateX(-1px); }
+.timeline .span { position: absolute; top: 5px; bottom: 5px; border-radius: 3px; opacity: .55; }
+.timeline .zone { position: absolute; top: 0; bottom: 0; }
+.timeline .zone-label { position: absolute; top: 2px; font: 600 11px var(--font-sans); color: var(--text-3); pointer-events: none; padding-left: 6px; }
+.timeline .window { position: absolute; top: 0; bottom: 0; border: 2px solid var(--brand); border-radius: 5px; background: color-mix(in srgb, var(--brand) 8%, transparent); }
+.timeline .playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--fig-cursor); }
+
+/* Stacked montages: full on top, reduced below, same width so the time axes line up */
+.split {
+  --top: 62%;
+  display: grid; grid-template-rows: minmax(0, var(--top)) 8px minmax(0, 1fr);
+  min-height: 0; padding: 0 16px 10px;
+}
+.pane {
+  display: grid; grid-template-columns: 104px minmax(0, 1fr); min-width: 0; min-height: 0;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden;
+}
+.pane-head {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 6px;
+  border-right: 1px solid var(--border); text-align: center; min-height: 0; overflow: hidden;
+}
+.pane-head h2 { font-size: 12px; line-height: 1.3; }
+.pane-head .meta { font-size: 11px; color: var(--text-3); line-height: 1.3; }
+#pane-reduced .pane-head { background: color-mix(in srgb, var(--bar-reduced) 10%, var(--surface)); }
+.head-map { width: 86px; height: 86px; flex: none; }
+.head-map svg { width: 100%; height: 100%; display: block; }
+.canvas-wrap { position: relative; min-height: 0; }
+.canvas-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: col-resize; touch-action: none; }
+.splitter { cursor: row-resize; position: relative; }
+.splitter::after {
+  content: ""; position: absolute; top: 3px; left: 40%; right: 40%; height: 2px; border-radius: 2px; background: var(--border-control); opacity: .5;
+}
+.splitter:hover::after, .splitter:focus-visible::after { opacity: 1; background: var(--brand); }
+
+/* Head map */
+.hm-head { fill: var(--surface-subtle); stroke: var(--border-control); stroke-width: .04; }
+.hm-el { fill: var(--surface); stroke: var(--border-control); stroke-width: .03; }
+.hm-el.on { fill: var(--brand); stroke: var(--brand); }
+.hm-link { stroke: var(--brand); stroke-width: .05; stroke-linecap: round; opacity: .55; }
+.hm-link.hot { stroke: var(--fig-accent); stroke-width: .11; opacity: 1; }
+.hm-el.hot { fill: var(--fig-accent); stroke: var(--fig-accent); }
+
+@media (max-width: 700px) {
+  .pane { grid-template-columns: 64px minmax(0, 1fr); }
+  .head-map { width: 54px; height: 54px; }
+  .pane-head h2, .pane-head .meta { display: none; }
+  .menus { margin-left: 0; }
+  .panel { position: fixed; left: 16px; right: 16px; top: 64px; width: auto; }
+}
+</style>
+</head>
+<body>
+  <header class="bar">
+    <div class="brand">
+      <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNyIgZmlsbD0iIzEyM0YzNSIvPjxwYXRoIGQ9Ik00IDE4aDRsMi02IDMgMTEgMy0xNCAzIDEyIDItNSAyIDJoNSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRTNDMTY0IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjxsaW5lIHgxPSIyMiIgeTE9IjUiIHgyPSIyMiIgeTI9IjI3IiBzdHJva2U9IiNGRkZGRkYiIHN0cm9rZS13aWR0aD0iMS41IiBvcGFjaXR5PSIuOCIvPjwvc3ZnPgo=" alt="" width="24" height="24">
+      <h1>Reduced Montage Lab</h1>
+    </div>
+    <button class="btn primary" id="play" type="button" aria-keyshortcuts="Space">Play</button>
+    <div class="seg" role="radiogroup" aria-label="Reduced montage" id="montages"></div>
+    <label>Jump to
+      <select id="chapter"></select>
+    </label>
+    <label>Display
+      <select id="mode">
+        <option value="page">Page + sweeper</option>
+        <option value="sweep">Live sweep</option>
+      </select>
+    </label>
+    <label>Page
+      <select id="page">
+        <option value="5">5 s</option>
+        <option value="10" selected>10 s</option>
+        <option value="15">15 s</option>
+        <option value="20">20 s</option>
+      </select>
+    </label>
+    <label>Sens
+      <select id="sens">
+        <option value="3">3 µV/mm</option>
+        <option value="5">5 µV/mm</option>
+        <option value="7" selected>7 µV/mm</option>
+        <option value="10">10 µV/mm</option>
+        <option value="15">15 µV/mm</option>
+        <option value="20">20 µV/mm</option>
+      </select>
+    </label>
+    <label>Speed
+      <select id="speed">
+        <option value="0.5">0.5×</option>
+        <option value="1" selected>1×</option>
+        <option value="2">2×</option>
+      </select>
+    </label>
+    <label class="check"><input type="checkbox" id="events" checked> Events</label>
+
+    <div class="menus">
+      <details class="menu" id="menu-capture">
+        <summary class="btn">Captures</summary>
+        <div class="panel wide">
+          <h3>What reaches the reduced montage</h3>
+          <p class="sub">Largest deflection of each pattern alone (background removed), in the best channel of each montage. Numbers come from the model.</p>
+          <div class="bars" id="bars"></div>
+        </div>
+      </details>
+      <details class="menu" id="menu-notes">
+        <summary class="btn">Montage notes</summary>
+        <div class="panel wide">
+          <h3 id="notes-title"></h3>
+          <p class="sub" id="placement"></p>
+          <ul id="note-list"></ul>
+        </div>
+      </details>
+      <details class="menu" id="menu-help">
+        <summary class="btn">Help</summary>
+        <div class="panel">
+          <h3>How to use</h3>
+          <ul>
+            <li><strong>Sweeper:</strong> the red line is shared by both montages. Click or drag in either to move it; hover to see a dashed guide at the same instant in the other.</li>
+            <li><strong>Channels:</strong> hover a channel to light up its electrode pair on the head map.</li>
+            <li><strong>Overview strip:</strong> click to seek; coloured marks are blinks (blue), eye opening/closure (amber) and spindles (green).</li>
+            <li><strong>Keys:</strong> Space play/pause · ←/→ previous/next page · ,/. nudge the sweeper 0.2 s · ↑/↓ sensitivity.</li>
+            <li>Both montages share sensitivity and time base, so equal deflections are equal voltages. Negative is up.</li>
+          </ul>
+          <h3>The recording</h3>
+          <ul id="chapter-list"></ul>
+          <p class="sub disclaimer">Educational simulation with synthetic signals · no patient data · not for clinical use · electrode positions are idealized · a companion to EEGSimLab.</p>
+        </div>
+      </details>
+    </div>
+    <button class="btn ghost" id="theme" type="button" aria-label="Switch to dim room theme">Dim</button>
+    <output id="clock" class="clock">0.0 s</output>
+  </header>
+
+  <div class="timeline" id="timeline" role="slider" tabindex="0" aria-label="Position in the 64-second recording" aria-valuemin="0" aria-valuemax="64" aria-valuenow="0">
+    <div class="window" id="timeline-window"></div>
+    <div class="playhead" id="timeline-head"></div>
+  </div>
+
+  <main class="split" id="split">
+    <section class="pane" id="pane-full" aria-label="Full montage">
+      <header class="pane-head">
+        <div class="head-map" aria-hidden="true"></div>
+        <h2></h2>
+        <p class="meta"></p>
+      </header>
+      <div class="canvas-wrap"><canvas role="img"></canvas></div>
+    </section>
+    <div class="splitter" id="splitter" role="separator" tabindex="0" aria-orientation="horizontal" aria-label="Resize the two montages" aria-valuemin="35" aria-valuemax="80" aria-valuenow="62"></div>
+    <section class="pane" id="pane-reduced" aria-label="Reduced montage">
+      <header class="pane-head">
+        <div class="head-map" aria-hidden="true"></div>
+        <h2></h2>
+        <p class="meta"></p>
+      </header>
+      <div class="canvas-wrap"><canvas role="img"></canvas></div>
+    </section>
+  </main>
+  <script type="module">
+// ---- src/montages.js
+// Reduced Montage Lab: electrode geometry and montage definitions.
+// Scalp positions use an azimuthal equidistant projection of the head seen from above: nose at y = -1,
+// left ear at x = -1, vertex at (0, 0). The 10-20 equator ring (Fp, F7/F8, T7/T8, P7/P8, O) lies on r = 1 and
+// the 10-10 inferior ring (T9/T10, TP9/TP10, P9/P10) on r = 1.2, i.e. 10% of the nasion-inion arc below it.
+// Positions are idealized; they are for teaching, not for source localization.
+
+const DEG = Math.PI / 180;
+// Ring electrode at `angle` degrees back from the nose, on radius r; side -1 is left, +1 is right.
+const ring = (angle, r, side) => [side * r * Math.sin(angle * DEG), -r * Math.cos(angle * DEG)];
+
+/** Every electrode the lab uses: [name, x, y]. */
+const electrodes = [
+  ['Fp1', ...ring(18, 1, -1)], ['Fp2', ...ring(18, 1, 1)],
+  ['F7', ...ring(54, 1, -1)], ['F3', -.4, -.45], ['Fz', 0, -.5], ['F4', .4, -.45], ['F8', ...ring(54, 1, 1)],
+  ['T7', ...ring(90, 1, -1)], ['C3', -.5, 0], ['Cz', 0, 0], ['C4', .5, 0], ['T8', ...ring(90, 1, 1)],
+  ['P7', ...ring(126, 1, -1)], ['P3', -.4, .45], ['Pz', 0, .5], ['P4', .4, .45], ['P8', ...ring(126, 1, 1)],
+  ['O1', ...ring(162, 1, -1)], ['O2', ...ring(162, 1, 1)],
+  ['TP7', ...ring(108, 1, -1)], ['TP8', ...ring(108, 1, 1)],
+  ['T9', ...ring(90, 1.2, -1)], ['T10', ...ring(90, 1.2, 1)],
+  ['TP9', ...ring(108, 1.2, -1)], ['TP10', ...ring(108, 1.2, 1)],
+  ['P9', ...ring(126, 1.2, -1)], ['P10', ...ring(126, 1.2, 1)],
+];
+
+/** Electrode name → row index in a record. */
+const electrodeIndex = Object.fromEntries(electrodes.map((e, i) => [e[0], i]));
+
+/** The standard 19 electrodes of the 10-20 system (drawn on every head map). */
+const TEN_TWENTY = electrodes.slice(0, 19).map(e => e[0]);
+
+/**
+ * Montages. Each has chains (groups) of bipolar channels written 'A-B' (displayed value A minus B, negative up).
+ * The full montage is the 18-channel longitudinal bipolar ("double banana") in the EEGSimLab order.
+ * Reduced montages are editable: add or remove channels here and every view, head map and visibility
+ * measurement follows.
+ */
+const MONTAGES = {
+  full: {
+    id: 'full',
+    name: 'Full 10-20 · longitudinal bipolar',
+    short: 'Double banana',
+    chains: [
+      ['Fp1-F7', 'F7-T7', 'T7-P7', 'P7-O1'],
+      ['Fp2-F8', 'F8-T8', 'T8-P8', 'P8-O2'],
+      ['Fp1-F3', 'F3-C3', 'C3-P3', 'P3-O1'],
+      ['Fp2-F4', 'F4-C4', 'C4-P4', 'P4-O2'],
+      ['Fz-Cz', 'Cz-Pz'],
+    ],
+  },
+  subhairline: {
+    id: 'subhairline',
+    name: 'Subhairline band · bipolar',
+    short: 'Subhairline',
+    chains: [
+      ['Fp1-F7', 'F7-T7', 'T7-P7', 'P7-O1'],
+      ['Fp2-F8', 'F8-T8', 'T8-P8', 'P8-O2'],
+    ],
+    placement: 'Ten electrodes, five per side, on a circumferential band around the head, mostly below the hairline, as in rapid-response headband systems (e.g. Ceribell): Fp1, F7, T7 (T3), P7 (T5), O1 and Fp2, F8, T8 (T4), P8 (T6), O2. The eight channels are the two temporal chains of the double banana.',
+    notes: [
+      'The temporal chains are identical channel for channel to the outer chains of the full montage, so the posterior dominant rhythm and its eye-closure reactivity remain visible in P7-O1 and P8-O2.',
+      'There are no parasagittal or midline electrodes. Spindles have a central/vertex maximum, so they are faint or missed, and vertex sleep transients would be too.',
+      'Blinks show in Fp1-F7 and Fp2-F8 as in the full montage, but without Fp1-F3 / Fp2-F4 there is no parasagittal channel to confirm the frontal field.',
+    ],
+  },
+  frontal: {
+    id: 'frontal',
+    name: 'Frontal only · bipolar',
+    short: 'Frontal only',
+    chains: [
+      ['Fp1-F7', 'Fp1-F3'],
+      ['Fp2-F8', 'Fp2-F4'],
+      ['F7-F3', 'F3-Fz', 'Fz-F4', 'F4-F8'],
+    ],
+    placement: 'Seven frontal electrodes (Fp1, Fp2, F7, F3, Fz, F4, F8), as in frontal-band or forehead-strip recordings.',
+    notes: [
+      'The posterior dominant rhythm is essentially absent: posterior background, its frequency and eye-closure reactivity cannot be assessed.',
+      'Spindles stay visible: Fp1-F3, Fp2-F4 and the transverse chain sample the anterior edge of their frontocentral field. Their central maximum, and any centroparietal asymmetry, is not sampled.',
+      'Every channel touching Fp1 or Fp2 carries the full blink; F7-F3 and F4-F8 sit behind the eyes and see much less of it.',
+    ],
+  },
+  ear: {
+    id: 'ear',
+    name: 'Behind the ear · bipolar',
+    short: 'Behind the ear',
+    chains: [
+      ['TP7-TP9', 'TP9-P9'],
+      ['TP8-TP10', 'TP10-P10'],
+      ['TP9-TP10', 'P9-P10'],
+    ],
+    placement: 'Electrodes around and behind the pinna: above-behind the ear (TP7, TP8), mastoid (TP9, TP10) and retro-auricular (P9, P10), as in ear-EEG and behind-the-ear devices.',
+    notes: [
+      'P9 and P10 are the electrodes nearest the occipital cortex, so a reduced but recognisable posterior dominant rhythm and its eye-opening block can appear in TP9-P9 and TP10-P10.',
+      'Spindles are faint: short inter-electrode distances far from the vertex record little potential difference.',
+      'Blinks almost disappear, which helps sleep scoring but means eye opening is easy to miss. Cross-head channels (TP9-TP10, P9-P10) cancel any symmetric field.',
+    ],
+  },
+};
+
+/** Reduced montages offered in the right-hand pane, in menu order. */
+const REDUCED = ['subhairline', 'frontal', 'ear'];
+
+/** Flat channel list of a montage with chain index and electrode rows: [{label, a, b, chain}]. */
+function channelsOf(montage) {
+  return montage.chains.flatMap((chain, c) => chain.map(label => {
+    const [a, b] = label.split('-');
+    if (!(a in electrodeIndex) || !(b in electrodeIndex)) throw new Error(`Unknown electrode in ${label}`);
+    return {label, a: electrodeIndex[a], b: electrodeIndex[b], chain: c};
+  }));
+}
+
+/** Electrode names a montage uses. */
+function electrodesOf(montage) {
+  return [...new Set(montage.chains.flat().flatMap(c => c.split('-')))];
+}
+
+// ---- src/signal.js
+// Reduced Montage Lab signal generator: one seeded 64-s synthetic recording at every electrode.
+// The record is a sum of scalp potentials (µV, referential to an ideal distant reference):
+// - background: spatially correlated coloured noise from many cortical patches, awake (low-voltage, fast)
+//   cross-fading into N2 sleep (higher-voltage theta/delta);
+// - posterior dominant rhythm (PDR): ~10 Hz from occipital and parietal patches with small phase lags, waxing and
+//   waning, blocked by eye opening, briefly faster just after eye closure (alpha squeak), fading in drowsiness;
+// - sleep spindles: 12-14 Hz waxing-waning bursts with a central/vertex field from several patches;
+// - eye potentials: blinks (cornea moves up under the lid, Bell's phenomenon → positive at Fp1/Fp2) and the
+//   slower eye-closure/eye-opening deflections.
+// Each component keeps its own array so the visibility panel can measure it alone in any montage.
+
+const TAU = 2 * Math.PI;
+/** Samples per second. */
+const FS = 256;
+/** Samples per record (a power of two for the FFT): 64 s. */
+const N = 16384;
+/** Record length in seconds. */
+const DURATION = N / FS;
+
+/** Seeded uniform generator (mulberry32). */
+function rng32(seed) {
+  let s = seed >>> 0;
+  return () => {
+    s = (s + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const normal = rand => { let u = 0; while (!u) u = rand(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(TAU * rand()); };
+const gauss = (x, m, w) => Math.exp(-.5 * ((x - m) / w) ** 2);
+const smoothstep = (a, b, x) => { const u = Math.min(1, Math.max(0, (x - a) / (b - a))); return u * u * (3 - 2 * u); };
+
+// In-place iterative radix-2 FFT (length must be a power of two).
+function fft(re, im, inverse = false) {
+  const n = re.length;
+  for (let i = 1, j = 0; i < n; i++) {
+    let bit = n >> 1;
+    for (; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; }
+  }
+  for (let len = 2; len <= n; len <<= 1) {
+    const ang = (inverse ? TAU : -TAU) / len, wr = Math.cos(ang), wi = Math.sin(ang);
+    for (let i = 0; i < n; i += len) {
+      let cr = 1, ci = 0;
+      for (let k = 0; k < len / 2; k++) {
+        const a = i + k, b = a + len / 2;
+        const xr = re[b] * cr - im[b] * ci, xi = re[b] * ci + im[b] * cr;
+        re[b] = re[a] - xr; im[b] = im[a] - xi; re[a] += xr; im[a] += xi;
+        const t = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = t;
+      }
+    }
+  }
+}
+
+/** Stationary Gaussian noise of N samples with amplitude spectrum shape(f), scaled to unit RMS. */
+function shapedNoise(rand, shape) {
+  const re = new Float64Array(N), im = new Float64Array(N);
+  for (let k = 1; k < N / 2; k++) {
+    const a = shape(k * FS / N);
+    if (!a) continue;
+    re[k] = a * normal(rand); im[k] = a * normal(rand);
+    re[N - k] = re[k]; im[N - k] = -im[k];
+  }
+  fft(re, im, true);
+  let ss = 0;
+  for (let i = 0; i < N; i++) ss += re[i] * re[i];
+  const k = 1 / Math.sqrt(ss / N || 1), out = new Float32Array(N);
+  for (let i = 0; i < N; i++) out[i] = re[i] * k;
+  return out;
+}
+
+// Background spectra (amplitude, not power). Both are band-limited to roughly 0.5-40 Hz like a displayed EEG.
+const band = f => smoothstep(.3, .8, f) * (1 - smoothstep(35, 45, f));
+const AWAKE_SPECTRUM = f => band(f) * (f ** -.7 + .35 * gauss(f, 20, 5) / 20 ** .7);
+const SLEEP_SPECTRUM = f => band(f) * (f ** -1.25 + .9 * gauss(f, 5, 1.6) / 5 ** 1.25);
+
+/** Scalp field of a cortical patch centred at (cx, cy) with spread sigma (projection units), sampled at every electrode. */
+function patchField(cx, cy, sigma) {
+  return electrodes.map(([, x, y]) => Math.exp(-((x - cx) ** 2 + (y - cy) ** 2) / (2 * sigma ** 2)));
+}
+
+// The scripted 64-s tour. Times in seconds.
+const SCRIPT = {
+  eyesClose: [4, 26],
+  eyesOpen: [19],
+  blinks: [0.9, 2.6, 20.1, 21.7, 23.4, 24.9],
+  drowsy: 33, // PDR fades and background slows from here
+  n2: 39, // N2 sleep from here
+  spindles: [[40.6, 1.0, 13.2], [43.9, 1.3, 12.6], [47.3, .8, 13.8], [50.2, 1.1, 12.9], [54, 1.4, 13.4],
+    [57.5, .9, 12.3], [61.2, 1.2, 13.6]], // [start, duration, Hz]
+};
+
+/** Chapters offered as quick jumps: [label, page start s, what to look for]. */
+const CHAPTERS = [
+  {id: 'pdr', label: 'PDR & eye closure', start: 0, hint: 'Eyes open with two blinks, then eye closure at 4 s brings in the posterior dominant rhythm.'},
+  {id: 'blinks', label: 'Eye opening & blinks', start: 16, hint: 'Eye opening at 19 s blocks the PDR; four blinks follow; the eyes close again at 26 s.'},
+  {id: 'drowsy', label: 'Drowsiness', start: 30, hint: 'The PDR drops out and the background slows from 33 s into N2 sleep at 39 s.'},
+  {id: 'spindles', label: 'N2 · spindles', start: 40, hint: 'Sleep spindles: 12-14 Hz waxing-waning bursts with a central/vertex maximum.'},
+];
+
+// Eye-closure window helper: is time t (s) inside an eyes-closed stretch that precedes drowsiness?
+function eyesClosedAt(t) {
+  const marks = [...SCRIPT.eyesClose.map(x => [x, 1]), ...SCRIPT.eyesOpen.map(x => [x, 0])].sort((a, b) => a[0] - b[0]);
+  let closed = 0, since = -Infinity;
+  for (const [x, v] of marks) if (t >= x) { closed = v; since = x; }
+  return {closed, since};
+}
+
+// Blink waveform at time u (s) after onset: fast rise (~0.1 s) and slower fall (~0.25 s), peak 1.
+function blinkWave(u) {
+  if (u < 0 || u > .38) return 0;
+  if (u < .1) { const s = Math.sin(Math.PI / 2 * u / .1); return s * s; }
+  const s = Math.cos(Math.PI / 2 * (u - .1) / .28); return s * s;
+}
+
+/**
+ * Generates the full record. Returns {fs, n, duration, data, parts, events}:
+ * data[e] is the summed signal at electrode e (Float32Array, µV); parts.{background,pdr,spindle,eye}[e] the same
+ * for one component; events lists annotations {t, end, type, label}.
+ */
+function generateRecord(seed = 20261026) {
+  const rand = rng32(seed);
+  const E = electrodes.length;
+  const zero = () => Array.from({length: E}, () => new Float32Array(N));
+  const parts = {background: zero(), pdr: zero(), spindle: zero(), eye: zero()};
+  const time = i => i / FS;
+  // Sleep weight of the background: 0 awake → 1 in N2.
+  const sleepWeight = t => smoothstep(SCRIPT.drowsy + 1, SCRIPT.n2, t);
+
+  // --- background: cortical patches spread over the head, each with its own awake and sleep noise.
+  const patches = [];
+  for (let k = 0; k < 22; k++) {
+    const r = 1.15 * Math.sqrt(rand()), a = TAU * rand();
+    patches.push(patchField(r * Math.sin(a), r * Math.cos(a), .42));
+  }
+  // Per-electrode scaling so every electrode has the same background RMS.
+  const norm = Array.from({length: E}, (_, e) => 1 / Math.sqrt(patches.reduce((s, p) => s + p[e] ** 2, 0)));
+  const AWAKE_UV = 9, SLEEP_UV = 15, LOCAL_UV = 1.6;
+  const wAwake = new Float32Array(N), wSleep = new Float32Array(N);
+  for (let i = 0; i < N; i++) { const w = sleepWeight(time(i)); wAwake[i] = Math.cos(w * Math.PI / 2); wSleep[i] = Math.sin(w * Math.PI / 2); }
+  for (const field of patches) {
+    const awake = shapedNoise(rand, AWAKE_SPECTRUM), sleep = shapedNoise(rand, SLEEP_SPECTRUM);
+    for (let e = 0; e < E; e++) {
+      const g = field[e] * norm[e];
+      if (g < 1e-4) continue;
+      const out = parts.background[e];
+      for (let i = 0; i < N; i++) out[i] += g * (AWAKE_UV * wAwake[i] * awake[i] + SLEEP_UV * wSleep[i] * sleep[i]);
+    }
+  }
+  for (let e = 0; e < E; e++) { // small independent electrode noise
+    const local = shapedNoise(rand, f => band(f) * f ** -.3), out = parts.background[e];
+    for (let i = 0; i < N; i++) out[i] += LOCAL_UV * local[i];
+  }
+
+  // --- posterior dominant rhythm.
+  const PDR_UV = 30;
+  const drift = shapedNoise(rand, f => gauss(f, 0, .15)); // slow frequency wander
+  const sharedEnv = shapedNoise(rand, f => gauss(f, .25, .2)); // waxing and waning
+  // Gate: 1 with eyes closed (rising over ~0.35 s after closure), ~0.1 with eyes open, fading in drowsiness.
+  const gate = new Float32Array(N), squeak = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    const t = time(i), {closed, since} = eyesClosedAt(t);
+    let g = closed ? smoothstep(since + .15, since + .5, t) : .1 + .9 * (1 - smoothstep(since, since + .25, t));
+    if (!closed && since === -Infinity) g = .1;
+    g *= 1 - smoothstep(SCRIPT.drowsy, SCRIPT.drowsy + 4, t);
+    gate[i] = g;
+    squeak[i] = closed ? Math.exp(-(t - since) / .8) : 0;
+  }
+  const phase = new Float64Array(N);
+  for (let i = 1; i < N; i++) phase[i] = phase[i - 1] + TAU * (9.8 + .25 * drift[i] + 1.1 * squeak[i]) / FS;
+  const pdrPatches = [ // [x, y, sigma, gain, phase lag (rad)]
+    [-.3, 1.02, .38, 1, 0], [.3, 1.02, .38, 1.1, .2], [-.45, .58, .34, .45, -.45], [.45, .58, .34, .5, -.3],
+  ];
+  for (const [x, y, sigma, gain, lag] of pdrPatches) {
+    const field = patchField(x, y, sigma), own = shapedNoise(rand, f => gauss(f, .3, .25));
+    const wander = shapedNoise(rand, f => gauss(f, 0, .3));
+    const wave = new Float32Array(N);
+    for (let i = 0; i < N; i++) {
+      const env = Math.max(.25, 1 + .28 * sharedEnv[i] + .12 * own[i]);
+      const p = phase[i] + lag + .25 * wander[i];
+      wave[i] = PDR_UV * gain * gate[i] * env * (Math.sin(p) + .12 * Math.sin(2 * p + .6));
+    }
+    for (let e = 0; e < E; e++) {
+      if (field[e] < 1e-4) continue;
+      const out = parts.pdr[e];
+      for (let i = 0; i < N; i++) out[i] += field[e] * wave[i];
+    }
+  }
+
+  // --- sleep spindles: central/vertex patches with small frequency and phase differences.
+  const SPINDLE_UV = 38;
+  const spindlePatches = [[0, -.05, .45, 1.15], [-.35, -.2, .32, .5], [.35, -.2, .32, .5], [-.35, .25, .32, .5], [.35, .25, .32, .5]];
+  const events = [];
+  for (const [start, dur, hz] of SCRIPT.spindles) {
+    events.push({t: start, end: start + dur, type: 'spindle', label: `Spindle ${hz.toFixed(1)} Hz`});
+    const i0 = Math.round(start * FS), i1 = Math.min(N, Math.round((start + dur) * FS));
+    for (const [x, y, sigma, gain] of spindlePatches) {
+      const field = patchField(x, y, sigma), f = hz + .35 * normal(rand), lag = .9 * normal(rand), g = gain * (.75 + .5 * rand());
+      for (let i = i0; i < i1; i++) {
+        const u = (i - i0) / (i1 - i0), env = Math.sin(Math.PI * u) ** 2;
+        const v = SPINDLE_UV * g * env * Math.sin(TAU * f * (i - i0) / FS + lag);
+        for (let e = 0; e < E; e++) if (field[e] > 1e-4) parts.spindle[e][i] += field[e] * v;
+      }
+    }
+  }
+
+  // --- eye potentials: both corneas act as one positive source just in front of the frontal poles.
+  // The right eye is weighted slightly less so a transverse Fp1-Fp2 channel is small but not exactly zero.
+  const rightEye = patchField(.26, -1.22, .44);
+  const eyeField = patchField(-.26, -1.22, .44).map((v, e) => v + .93 * rightEye[e]);
+  const eyePeak = Math.max(...eyeField);
+  const BLINK_UV = 150;
+  const eye = new Float32Array(N);
+  const addEvent = (t0, fn, span) => {
+    for (let i = Math.max(0, Math.floor(t0 * FS)); i < Math.min(N, Math.ceil((t0 + span) * FS)); i++) eye[i] += fn(time(i) - t0);
+  };
+  for (const t of SCRIPT.blinks) {
+    const amp = BLINK_UV * (.8 + .4 * rand());
+    addEvent(t, u => amp * blinkWave(u), .4);
+    events.push({t, end: t + .38, type: 'blink', label: 'Blink'});
+  }
+  for (const t of SCRIPT.eyesClose) { // lid closure with a blink, then the upturned eyes keep Fp positive (decays on the high-pass)
+    addEvent(t, u => BLINK_UV * 1.05 * blinkWave(u) + 55 * smoothstep(0, .25, u) * Math.exp(-u / 1.2), 6);
+    events.push({t, end: t + .4, type: 'eyes-closed', label: 'Eyes closed'});
+  }
+  for (const t of SCRIPT.eyesOpen) { // the eyes turn back down: Fp swings negative, then the high-pass restores baseline
+    addEvent(t, u => -70 * smoothstep(0, .2, u) * Math.exp(-u / 1), 5);
+    events.push({t, end: t + .4, type: 'eyes-open', label: 'Eyes open'});
+  }
+  for (let e = 0; e < E; e++) {
+    const g = eyeField[e] / eyePeak, out = parts.eye[e];
+    if (g > 1e-4) for (let i = 0; i < N; i++) out[i] = g * eye[i];
+  }
+
+  events.push({t: SCRIPT.drowsy, end: SCRIPT.drowsy, type: 'state', label: 'Drowsy'});
+  events.push({t: SCRIPT.n2, end: SCRIPT.n2, type: 'state', label: 'N2 sleep'});
+  events.sort((a, b) => a.t - b.t);
+
+  const data = Array.from({length: E}, (_, e) => {
+    const out = new Float32Array(N);
+    for (const p of Object.values(parts)) for (let i = 0; i < N; i++) out[i] += p[e][i];
+    return out;
+  });
+  return {fs: FS, n: N, duration: DURATION, data, parts, events};
+}
+
+/** Bipolar derivations of electrode arrays: one Float32Array per channel ({a, b} electrode rows). */
+function deriveChannels(arrays, channels) {
+  return channels.map(({a, b}) => {
+    const x = arrays[a], y = arrays[b], out = new Float32Array(x.length);
+    for (let i = 0; i < x.length; i++) out[i] = x[i] - y[i];
+    return out;
+  });
+}
+
+// Windows (s) in which each teaching feature is present, for the visibility measurement.
+function featureWindows(record) {
+  const closed = [];
+  for (const t of SCRIPT.eyesClose) {
+    const next = [...SCRIPT.eyesOpen, SCRIPT.drowsy].filter(x => x > t).sort((a, b) => a - b)[0];
+    closed.push([t + 1, next]);
+  }
+  return {
+    pdr: closed,
+    spindle: record.events.filter(e => e.type === 'spindle').map(e => [e.t, e.end]),
+    eye: record.events.filter(e => e.type === 'blink').map(e => [e.t - .05, e.end + .05]),
+  };
+}
+
+/**
+ * Largest absolute deflection of one component in a montage, inside that component's windows.
+ * Returns {uv, channel} for the channel where it is largest.
+ */
+function peakDeflection(component, channels, windows, fs = FS) {
+  let best = {uv: 0, channel: null};
+  for (const ch of channels) {
+    const x = component[ch.a], y = component[ch.b];
+    for (const [t0, t1] of windows) {
+      for (let i = Math.max(0, Math.round(t0 * fs)); i < Math.min(x.length, Math.round(t1 * fs)); i++) {
+        const v = Math.abs(x[i] - y[i]);
+        if (v > best.uv) best = {uv: v, channel: ch.label};
+      }
+    }
+  }
+  return best;
+}
+
+// ---- src/viewer.js
+// Reduced Montage Lab renderer: draws one pane of bipolar EEG on a 2D canvas.
+// Conventions follow EEGSimLab: negative up, sensitivity in µV/mm at 3.78 CSS px per mm, a minor grid line every
+// 0.2 s and a major line every second. Both panes are drawn by the same function with the same page, sensitivity
+// and sweeper time, so a deflection of a given size looks the same height in each.
+// Two display modes: 'page' draws the whole page and moves the sweeper across it; 'sweep' paints new data to the
+// left of the sweeper and leaves the previous page to its right, as a bedside monitor does.
+
+/** Plot gutters in CSS px: labels left, time axis and event tags top, calibration bottom. */
+const GUTTER = Object.freeze({left: 74, right: 12, top: 40, bottom: 26});
+/** CSS pixels per millimetre (96 dpi). */
+const PX_PER_MM = 3.78;
+/** Blank gap between chains, in channel spacings. */
+const CHAIN_GAP = .7;
+/** Blank strip ahead of the sweeper in sweep mode, in seconds. */
+const SWEEP_GAP = .12;
+
+/** Plot rectangle and channel baselines for a pane of the given CSS size. */
+function layout(width, height, channels) {
+  const plot = {x: GUTTER.left, y: GUTTER.top, w: Math.max(10, width - GUTTER.left - GUTTER.right), h: Math.max(10, height - GUTTER.top - GUTTER.bottom)};
+  const chains = channels.length ? channels[channels.length - 1].chain + 1 : 1;
+  const units = channels.length + CHAIN_GAP * (chains - 1);
+  const spacing = plot.h / units;
+  const rows = channels.map((ch, i) => ({label: ch.label, y: plot.y + spacing * (i + .5 + CHAIN_GAP * ch.chain)}));
+  return {plot, rows, spacing};
+}
+
+/** Time (s) under a canvas x coordinate. */
+function xToTime(lay, x, pageStart, pageLen) {
+  return pageStart + Math.min(1, Math.max(0, (x - lay.plot.x) / lay.plot.w)) * pageLen;
+}
+
+/** Index of the channel row nearest a canvas y coordinate, or -1 outside the plot. */
+function yToRow(lay, y) {
+  if (y < lay.plot.y || y > lay.plot.y + lay.plot.h) return -1;
+  let best = -1, d = Infinity;
+  lay.rows.forEach((r, i) => { const di = Math.abs(r.y - y); if (di < d) { d = di; best = i; } });
+  return best;
+}
+
+const EVENT_INK = {blink: 'info', 'eyes-open': 'warning', 'eyes-closed': 'warning', spindle: 'success', state: 'neutral'};
+
+/**
+ * Draws a pane. o: {width, height, channels, traces, fs, pageStart, pageLen, cursor, mode, ghost, sens,
+ * palette, events, showEvents, highlightRow, duration}.
+ */
+function drawPane(ctx, o) {
+  const {width, height, palette: p, pageStart, pageLen, fs} = o;
+  const lay = layout(width, height, o.channels);
+  const {plot} = lay;
+  const x = t => plot.x + (t - pageStart) / pageLen * plot.w;
+  ctx.save();
+  ctx.fillStyle = p.paper;
+  ctx.fillRect(0, 0, width, height);
+
+  // Grid and time labels.
+  ctx.lineWidth = 1;
+  const minor = .2, first = Math.ceil(pageStart / minor - 1e-6);
+  for (let k = first; k * minor <= pageStart + pageLen + 1e-6; k++) {
+    const t = k * minor, major = Math.abs(t - Math.round(t)) < 1e-6, xx = Math.round(x(t)) + .5;
+    ctx.strokeStyle = major ? p.gridMajor : p.gridMinor;
+    ctx.beginPath(); ctx.moveTo(xx, plot.y); ctx.lineTo(xx, plot.y + plot.h); ctx.stroke();
+    if (major && xx < plot.x + plot.w - 8) {
+      ctx.fillStyle = p.label; ctx.font = `11px ${p.mono}`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      ctx.fillText(`${Math.round(t)} s`, xx, 13);
+    }
+  }
+
+  // Events: shaded spans in the plot, tags in the top gutter.
+  const eventsIn = (t0, t1, shift) => o.events.filter(e => e.end >= t0 && e.t <= t1).map(e => ({...e, shift}));
+  const ranges = sweepRanges(o);
+  if (o.showEvents) {
+    const shown = ranges.flatMap(([t0, t1, shift]) => eventsIn(t0, t1, shift));
+    let lastTagEnd = -Infinity;
+    for (const e of shown) {
+      const ink = p.event[EVENT_INK[e.type]] || p.label;
+      const x0 = x(e.t + e.shift), x1 = x(e.end + e.shift);
+      if (e.type === 'spindle' || e.type === 'blink') {
+        ctx.fillStyle = withAlpha(ink, .1);
+        ctx.fillRect(x0, plot.y, Math.max(2, x1 - x0), plot.h);
+      } else {
+        ctx.strokeStyle = withAlpha(ink, .75); ctx.setLineDash([4, 3]);
+        ctx.beginPath(); ctx.moveTo(Math.round(x0) + .5, plot.y); ctx.lineTo(Math.round(x0) + .5, plot.y + plot.h); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      ctx.font = `600 11px ${p.sans}`;
+      const w = ctx.measureText(e.label).width + 10, tx = Math.max(plot.x, Math.min(x0, plot.x + plot.w - w));
+      const overlaps = tx < lastTagEnd; // a tag that would cover the previous one is drawn faded
+      if (!overlaps) lastTagEnd = tx + w + 4;
+      if (tx >= plot.x - 1 && x0 <= plot.x + plot.w) {
+        const ty = 18;
+        ctx.globalAlpha = overlaps ? .55 : 1;
+        ctx.fillStyle = withAlpha(ink, .14);
+        roundRect(ctx, tx, ty, w, 16, 4); ctx.fill();
+        ctx.fillStyle = ink; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText(e.label, tx + 5, ty + 8.5);
+        ctx.globalAlpha = 1;
+      }
+    }
+  }
+
+  // Channel labels and baselines.
+  ctx.font = `12px ${p.mono}`; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  lay.rows.forEach((r, i) => {
+    const hot = i === o.highlightRow;
+    if (hot) { ctx.fillStyle = withAlpha(p.accent, .12); ctx.fillRect(0, r.y - lay.spacing / 2, width, lay.spacing); }
+    ctx.fillStyle = hot ? p.accent : p.channel;
+    ctx.font = `${hot ? 700 : 400} 12px ${p.mono}`;
+    ctx.fillText(r.label, plot.x - 10, r.y);
+  });
+
+  // Traces.
+  const pxPerUv = PX_PER_MM / o.sens;
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0, plot.y - 2, width, plot.h + 4); ctx.clip();
+  ctx.lineJoin = 'round'; ctx.lineWidth = 1;
+  o.traces.forEach((trace, c) => {
+    const base = lay.rows[c].y;
+    ctx.strokeStyle = c === o.highlightRow ? p.accent : p.trace;
+    ctx.lineWidth = c === o.highlightRow ? 1.3 : 1;
+    ctx.beginPath();
+    for (const [t0, t1, shift] of ranges) {
+      const i0 = Math.max(0, Math.floor(t0 * fs)), i1 = Math.min(trace.length - 1, Math.ceil(t1 * fs));
+      for (let i = i0; i <= i1; i++) {
+        const xx = x(i / fs + shift), yy = base + trace[i] * pxPerUv; // negative up: canvas y grows downward
+        if (i === i0) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy);
+      }
+    }
+    ctx.stroke();
+  });
+  ctx.restore();
+
+  // Hover ghost (from either pane) and the sweeper.
+  if (o.ghost != null && o.ghost >= pageStart && o.ghost <= pageStart + pageLen) {
+    const gx = Math.round(x(o.ghost)) + .5;
+    ctx.strokeStyle = withAlpha(p.cursor, .55); ctx.setLineDash([3, 3]); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(gx, plot.y); ctx.lineTo(gx, plot.y + plot.h); ctx.stroke(); ctx.setLineDash([]);
+  }
+  const cx = Math.round(x(o.cursor)) + .5;
+  ctx.strokeStyle = p.cursor; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(cx, plot.y - 4); ctx.lineTo(cx, plot.y + plot.h); ctx.stroke();
+  ctx.fillStyle = p.cursor;
+  ctx.beginPath(); ctx.moveTo(cx - 5, plot.y - 9); ctx.lineTo(cx + 5, plot.y - 9); ctx.lineTo(cx, plot.y - 3); ctx.closePath(); ctx.fill();
+
+  // Calibration: 50 µV vertical and 1 s horizontal at the bottom right.
+  const calH = 50 * pxPerUv, cx0 = plot.x + plot.w - 8, cy0 = height - 8;
+  const secW = plot.w / pageLen;
+  ctx.strokeStyle = p.label; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(cx0 - secW, cy0); ctx.lineTo(cx0, cy0); ctx.lineTo(cx0, cy0 - Math.min(calH, height - 12)); ctx.stroke();
+  ctx.fillStyle = p.label; ctx.font = `11px ${p.sans}`; ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
+  ctx.fillText(`50 µV · 1 s`, cx0 - secW - 6, cy0);
+  ctx.textAlign = 'left';
+  ctx.fillText(`${o.sens} µV/mm · ${pageLen} s page`, 8, cy0);
+  ctx.restore();
+  return lay;
+}
+
+// Time ranges to draw: [from, to, shift] where data at time t appears at display time t + shift.
+function sweepRanges(o) {
+  const {pageStart, pageLen, cursor, mode, duration} = o;
+  if (mode !== 'sweep') return [[pageStart, Math.min(duration, pageStart + pageLen), 0]];
+  const ranges = [[pageStart, cursor, 0]];
+  const prevStart = pageStart - pageLen;
+  if (prevStart >= 0 && cursor + SWEEP_GAP < pageStart + pageLen) ranges.push([cursor + SWEEP_GAP - pageLen, pageStart, pageLen]);
+  return ranges;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+
+/** Colour with an alpha, from #rrggbb. */
+function withAlpha(hex, a) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex).trim());
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`;
+}
+
+// ---- src/app.js
+// Reduced Montage Lab controller: one synthetic record, two stacked panes (full double banana above, a reduced
+// montage below, time axes aligned), one shared sweeper, page, sensitivity and play state. Hovering either pane shows a guide at the same instant in
+// the other; hovering a channel lights its electrode pair on that pane's head map.
+
+
+
+const $ = id => document.getElementById(id);
+const store = {
+  get(key) { try { return localStorage.getItem(`rml:${key}`); } catch { return null; } },
+  set(key, value) { try { localStorage.setItem(`rml:${key}`, value); } catch { /* storage unavailable */ } },
+};
+
+const state = {
+  reduced: REDUCED.includes(store.get('montage')) ? store.get('montage') : 'subhairline',
+  pageLen: 10, pageStart: 0, cursor: 0, playing: false, speed: 1, sens: 7, mode: 'page', showEvents: true,
+  ghost: null, hoverRow: {full: -1, reduced: -1}, chapter: 'pdr',
+  sensAuto: true, // sensitivity follows the window until the user picks one
+};
+
+const record = generateRecord();
+const windows = featureWindows(record);
+const cache = new Map(); // montage id → {channels, traces}
+function montageData(id) {
+  if (!cache.has(id)) {
+    const channels = channelsOf(MONTAGES[id]);
+    cache.set(id, {channels, traces: deriveChannels(record.data, channels)});
+  }
+  return cache.get(id);
+}
+
+// ------------------------------------------------------------------ panes
+const panes = {
+  full: setupPane($('pane-full'), 'full'),
+  reduced: setupPane($('pane-reduced'), 'reduced'),
+};
+
+function setupPane(el, key) {
+  const canvas = el.querySelector('canvas');
+  const pane = {el, key, canvas, ctx: canvas.getContext('2d'), width: 0, height: 0, lay: null};
+  new ResizeObserver(() => { sizeCanvas(pane); if (key === 'full') fitSensitivity(); render(); }).observe(canvas.parentElement);
+  let dragging = false;
+  const timeAt = ev => {
+    const r = canvas.getBoundingClientRect();
+    return {t: xToTime(pane.lay, ev.clientX - r.left, state.pageStart, state.pageLen), row: yToRow(pane.lay, ev.clientY - r.top)};
+  };
+  canvas.addEventListener('pointerdown', ev => {
+    dragging = true; canvas.setPointerCapture(ev.pointerId);
+    state.cursor = timeAt(ev).t; render();
+  });
+  canvas.addEventListener('pointermove', ev => {
+    const {t, row} = timeAt(ev);
+    state.ghost = t;
+    if (state.hoverRow[key] !== row) { state.hoverRow[key] = row; drawHeadMap(key); }
+    if (dragging) state.cursor = t;
+    render();
+  });
+  const end = () => { dragging = false; };
+  canvas.addEventListener('pointerup', end);
+  canvas.addEventListener('pointercancel', end);
+  canvas.addEventListener('pointerleave', () => {
+    state.ghost = null; state.hoverRow[key] = -1; drawHeadMap(key); render();
+  });
+  return pane;
+}
+
+// Starting sensitivity: the most sensitive standard value (7 µV/mm or above) at which 50 µV spans at most 1.6
+// channel spacings of the full montage, so a short window does not bury the double banana in overlap.
+function fitSensitivity() {
+  if (!state.sensAuto || !panes.full.width) return;
+  const {spacing} = layout(panes.full.width, panes.full.height, montageData('full').channels);
+  const options = [...$('sens').options].map(o => Number(o.value)).filter(v => v >= 7);
+  state.sens = options.find(v => 50 * 3.78 / v <= 1.6 * spacing) ?? options[options.length - 1];
+  $('sens').value = String(state.sens);
+}
+
+function sizeCanvas(pane) {
+  const r = pane.canvas.parentElement.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  pane.width = Math.max(50, r.width); pane.height = Math.max(50, r.height);
+  pane.canvas.width = Math.round(pane.width * dpr); pane.canvas.height = Math.round(pane.height * dpr);
+  pane.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+// ------------------------------------------------------------------ palette from CSS tokens
+let palette;
+function readPalette() {
+  const css = getComputedStyle(document.documentElement), v = name => css.getPropertyValue(name).trim();
+  palette = {
+    paper: v('--fig-paper'), trace: v('--fig-trace'), label: v('--fig-label'), channel: v('--fig-channel'),
+    gridMajor: v('--fig-grid-major'), gridMinor: v('--fig-grid-minor'), cursor: v('--fig-cursor'), accent: v('--fig-accent'),
+    mono: v('--font-mono'), sans: v('--font-sans'),
+    event: {info: v('--info'), success: v('--success'), warning: v('--warning'), neutral: v('--neutral')},
+  };
+}
+
+// ------------------------------------------------------------------ drawing
+let frameQueued = false;
+function render() {
+  if (frameQueued) return;
+  frameQueued = true;
+  requestAnimationFrame(() => { frameQueued = false; drawNow(); });
+}
+
+function drawNow() {
+  for (const pane of Object.values(panes)) {
+    if (!pane.width) continue;
+    const id = pane.key === 'full' ? 'full' : state.reduced, {channels, traces} = montageData(id);
+    pane.lay = drawPane(pane.ctx, {
+      width: pane.width, height: pane.height, channels, traces, fs: FS, duration: DURATION,
+      pageStart: state.pageStart, pageLen: state.pageLen, cursor: state.cursor, mode: state.mode,
+      ghost: state.ghost, sens: state.sens, palette, events: record.events, showEvents: state.showEvents,
+      highlightRow: state.hoverRow[pane.key],
+    });
+    pane.canvas.setAttribute('aria-label', `${MONTAGES[id].name}: ${channels.length} channels, ${state.pageStart}-${state.pageStart + state.pageLen} s, sweeper at ${state.cursor.toFixed(1)} s`);
+  }
+  $('clock').textContent = `${state.cursor.toFixed(1)} s`;
+  const tl = $('timeline');
+  $('timeline-window').style.left = `${state.pageStart / DURATION * 100}%`;
+  $('timeline-window').style.width = `${state.pageLen / DURATION * 100}%`;
+  $('timeline-head').style.left = `${state.cursor / DURATION * 100}%`;
+  tl.setAttribute('aria-valuenow', state.cursor.toFixed(1));
+  tl.setAttribute('aria-valuetext', `${state.cursor.toFixed(1)} seconds`);
+  const current = CHAPTERS.filter(c => c.start <= state.cursor + 1e-6).pop() || CHAPTERS[0];
+  if (current.id !== state.chapter) { state.chapter = current.id; $('chapter').value = current.id; }
+}
+
+// ------------------------------------------------------------------ head maps
+function drawHeadMap(key) {
+  const id = key === 'full' ? 'full' : state.reduced, montage = MONTAGES[id];
+  const used = new Set(electrodesOf(montage)), pos = Object.fromEntries(electrodes.map(e => [e[0], [e[1], e[2]]]));
+  const {channels} = montageData(id), hot = channels[state.hoverRow[key]];
+  const hotNames = hot ? hot.label.split('-') : [];
+  const shown = electrodes.filter(e => TEN_TWENTY.includes(e[0]) || used.has(e[0]));
+  const links = channels.map(ch => {
+    const [a, b] = ch.label.split('-'), [x1, y1] = pos[a], [x2, y2] = pos[b];
+    return `<line class="hm-link${ch === hot ? ' hot' : ''}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+  }).join('');
+  const dots = shown.map(([name, x, y]) => {
+    const cls = hotNames.includes(name) ? 'hm-el on hot' : used.has(name) ? 'hm-el on' : 'hm-el';
+    return `<circle class="${cls}" cx="${x}" cy="${y}" r="${used.has(name) ? .09 : .065}"><title>${name}</title></circle>`;
+  }).join('');
+  panes[key].el.querySelector('.head-map').innerHTML = `<svg viewBox="-1.38 -1.38 2.76 2.76" role="img" aria-label="Electrodes of ${montage.name}">
+    <path class="hm-head" d="M-.12 -.99 L0 -1.16 L.12 -.99 Z"/>
+    <ellipse class="hm-head" cx="-1.02" cy="0" rx=".08" ry=".2"/><ellipse class="hm-head" cx="1.02" cy="0" rx=".08" ry=".2"/>
+    <circle class="hm-head" cx="0" cy="0" r="1"/>${links}${dots}</svg>`;
+}
+
+function paneHeaders() {
+  for (const key of ['full', 'reduced']) {
+    const id = key === 'full' ? 'full' : state.reduced, m = MONTAGES[id], n = montageData(id).channels.length;
+    const head = panes[key].el.querySelector('.pane-head');
+    head.querySelector('h2').textContent = m.name;
+    head.querySelector('.meta').textContent = `${n} ch · ${electrodesOf(m).length} electrodes`;
+    drawHeadMap(key);
+  }
+}
+
+// ------------------------------------------------------------------ teaching panel
+function updateTeaching() {
+  const m = MONTAGES[state.reduced];
+  const full = montageData('full').channels, reduced = montageData(state.reduced).channels;
+  const features = [['pdr', 'Posterior dominant rhythm', 'pdr'], ['spindle', 'Sleep spindles', 'spindle'], ['eye', 'Blinks', 'eye']];
+  $('bars').innerHTML = features.map(([key, title]) => {
+    const f = peakDeflection(record.parts[key], full, windows[key]), r = peakDeflection(record.parts[key], reduced, windows[key]);
+    const pct = f.uv ? Math.round(100 * r.uv / f.uv) : 0;
+    const row = (label, v, color) => `<div class="bar-row"><span>${label}</span>
+      <span class="track"><span class="fill" style="width:${Math.max(1, 100 * v.uv / f.uv)}%;background:var(${color})"></span></span>
+      <span class="val">${Math.round(v.uv)} µV · ${v.channel ?? '-'}</span></div>`;
+    return `<div class="bar-group"><h4><span>${title}</span><span class="pct" title="Reduced peak as a share of the full-montage peak">${pct}%</span></h4>
+      ${row('Full', f, '--bar-full')}${row(m.short, r, '--bar-reduced')}</div>`;
+  }).join('');
+  $('notes-title').textContent = `${m.short}: what to expect`;
+  $('placement').textContent = m.placement;
+  $('note-list').innerHTML = m.notes.map(n => `<li>${n}</li>`).join('');
+}
+
+// ------------------------------------------------------------------ chapters and timeline
+function jumpTo(start, cursor = start) {
+  state.pageStart = Math.max(0, Math.min(DURATION - state.pageLen, start));
+  state.cursor = Math.min(state.pageStart + state.pageLen, Math.max(state.pageStart, cursor));
+  render();
+}
+
+function buildTimeline() {
+  const tl = $('timeline'), pct = t => `${t / DURATION * 100}%`;
+  const ink = {blink: '--info', 'eyes-open': '--warning', 'eyes-closed': '--warning', spindle: '--success', state: '--neutral'};
+  const sleepZone = record.events.find(e => e.label === 'N2 sleep');
+  const html = [];
+  if (sleepZone) {
+    html.push(`<div class="zone" style="left:${pct(sleepZone.t)};right:0;background:color-mix(in srgb, var(--info) 7%, transparent)"></div>`);
+    html.push(`<span class="zone-label" style="left:${pct(sleepZone.t)}">N2</span>`);
+  }
+  for (const e of record.events) {
+    if (e.type === 'spindle') html.push(`<div class="span" style="left:${pct(e.t)};width:${pct(e.end - e.t)};background:var(${ink[e.type]})" title="${e.label} at ${e.t.toFixed(1)} s"></div>`);
+    else html.push(`<div class="tick" style="left:${pct(e.t)};background:var(${ink[e.type]})" title="${e.label} at ${e.t.toFixed(1)} s"></div>`);
+  }
+  tl.insertAdjacentHTML('afterbegin', html.join(''));
+  const seek = ev => {
+    const r = tl.getBoundingClientRect(), t = Math.min(DURATION, Math.max(0, (ev.clientX - r.left) / r.width * DURATION));
+    const inPage = t >= state.pageStart && t <= state.pageStart + state.pageLen;
+    if (inPage) { state.cursor = t; render(); } else jumpTo(Math.floor(t - state.pageLen / 2), t);
+  };
+  let drag = false;
+  tl.addEventListener('pointerdown', ev => { drag = true; tl.setPointerCapture(ev.pointerId); seek(ev); });
+  tl.addEventListener('pointermove', ev => { if (drag) seek(ev); });
+  tl.addEventListener('pointerup', () => { drag = false; });
+  tl.addEventListener('keydown', ev => {
+    if (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight') { ev.preventDefault(); ev.stopPropagation(); pageStep(ev.key === 'ArrowLeft' ? -1 : 1); }
+  });
+}
+
+// ------------------------------------------------------------------ playback
+let last = null;
+function tick(now) {
+  if (!state.playing) { last = null; return; }
+  if (last != null) {
+    state.cursor += Math.min(.1, (now - last) / 1000) * state.speed;
+    if (state.cursor >= state.pageStart + state.pageLen || state.cursor >= DURATION) {
+      const next = state.pageStart + state.pageLen;
+      state.pageStart = next + state.pageLen > DURATION + 1e-6 ? 0 : next;
+      state.cursor = state.pageStart;
+    }
+  }
+  last = now;
+  drawNow();
+  requestAnimationFrame(tick);
+}
+
+function setPlaying(on) {
+  state.playing = on;
+  $('play').textContent = on ? 'Pause' : 'Play';
+  $('play').setAttribute('aria-pressed', String(on));
+  if (on) requestAnimationFrame(tick);
+}
+
+function pageStep(dir) {
+  let start = state.pageStart + dir * state.pageLen;
+  if (start < 0) start = 0;
+  if (start > DURATION - state.pageLen) start = dir > 0 ? 0 : DURATION - state.pageLen;
+  jumpTo(start);
+}
+
+// ------------------------------------------------------------------ controls
+function setReduced(id) {
+  state.reduced = id; store.set('montage', id); state.hoverRow.reduced = -1;
+  for (const b of $('montages').children) b.setAttribute('aria-checked', String(b.dataset.id === id));
+  paneHeaders(); updateTeaching(); render();
+}
+
+function initControls() {
+  $('montages').innerHTML = REDUCED.map(id => `<button type="button" role="radio" data-id="${id}" aria-checked="false">${MONTAGES[id].short}</button>`).join('');
+  $('montages').addEventListener('click', ev => { const b = ev.target.closest('button'); if (b) setReduced(b.dataset.id); });
+  $('montages').addEventListener('keydown', ev => {
+    if (!['ArrowLeft', 'ArrowRight'].includes(ev.key)) return;
+    ev.preventDefault(); ev.stopPropagation();
+    const i = (REDUCED.indexOf(state.reduced) + (ev.key === 'ArrowRight' ? 1 : REDUCED.length - 1)) % REDUCED.length;
+    setReduced(REDUCED[i]); $('montages').children[i].focus();
+  });
+  $('chapter').innerHTML = CHAPTERS.map(c => `<option value="${c.id}">${c.label}</option>`).join('');
+  $('chapter-list').innerHTML = CHAPTERS.map(c => `<li><strong>${c.label}:</strong> ${c.hint}</li>`).join('');
+  $('chapter').addEventListener('change', ev => {
+    const c = CHAPTERS.find(c => c.id === ev.target.value);
+    state.chapter = c.id; jumpTo(c.start);
+  });
+
+  // Explanation dropdowns: one open at a time; Escape or a click elsewhere closes them.
+  const menus = [...document.querySelectorAll('details.menu')];
+  for (const m of menus) m.addEventListener('toggle', () => { if (m.open) menus.forEach(o => { if (o !== m) o.open = false; }); });
+  document.addEventListener('pointerdown', ev => { if (!ev.target.closest('details.menu')) menus.forEach(m => { m.open = false; }); });
+  document.addEventListener('keydown', ev => {
+    const open = menus.find(m => m.open);
+    if (ev.key === 'Escape' && open) { open.open = false; open.querySelector('summary').focus(); }
+  });
+  $('play').addEventListener('click', () => setPlaying(!state.playing));
+  $('mode').addEventListener('change', ev => { state.mode = ev.target.value; render(); });
+  $('page').addEventListener('change', ev => {
+    state.pageLen = Number(ev.target.value);
+    jumpTo(Math.min(state.pageStart, DURATION - state.pageLen), state.cursor);
+  });
+  $('sens').addEventListener('change', ev => { state.sens = Number(ev.target.value); state.sensAuto = false; render(); });
+  $('speed').addEventListener('change', ev => { state.speed = Number(ev.target.value); });
+  $('events').addEventListener('change', ev => { state.showEvents = ev.target.checked; render(); });
+
+  const applyTheme = theme => {
+    document.documentElement.dataset.theme = theme;
+    $('theme').textContent = theme === 'dim' ? 'Light' : 'Dim';
+    $('theme').setAttribute('aria-label', theme === 'dim' ? 'Switch to light theme' : 'Switch to dim room theme');
+    readPalette(); render();
+  };
+  $('theme').addEventListener('click', () => {
+    const next = document.documentElement.dataset.theme === 'dim' ? 'light' : 'dim';
+    store.set('theme', next); applyTheme(next);
+  });
+  applyTheme(store.get('theme') || 'light'); // white EEG paper by default, as in EEGSimLab
+
+  // Splitter between the stacked panes: the share of height given to the full montage (pointer and keyboard).
+  const split = $('split'), splitter = $('splitter');
+  const setSplit = pct => {
+    pct = Math.min(80, Math.max(35, pct));
+    split.style.setProperty('--top', `${pct}%`); splitter.setAttribute('aria-valuenow', String(Math.round(pct)));
+    store.set('split-rows', String(pct));
+  };
+  setSplit(Number(store.get('split-rows')) || 62);
+  let dragging = false;
+  splitter.addEventListener('pointerdown', ev => { dragging = true; splitter.setPointerCapture(ev.pointerId); });
+  splitter.addEventListener('pointermove', ev => {
+    if (!dragging) return;
+    const r = split.getBoundingClientRect(), inner = r.height - 10;
+    setSplit((ev.clientY - r.top) / inner * 100);
+  });
+  splitter.addEventListener('pointerup', () => { dragging = false; });
+  splitter.addEventListener('keydown', ev => {
+    if (ev.key !== 'ArrowUp' && ev.key !== 'ArrowDown') return;
+    ev.preventDefault(); ev.stopPropagation();
+    setSplit(Number(splitter.getAttribute('aria-valuenow')) + (ev.key === 'ArrowUp' ? -2 : 2));
+  });
+
+  const SENS = [...$('sens').options].map(o => Number(o.value));
+  document.addEventListener('keydown', ev => {
+    if (ev.target.closest('select, input, textarea, details.menu') || ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    if (ev.key === ' ' && !ev.target.closest('button')) { ev.preventDefault(); setPlaying(!state.playing); }
+    else if (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight') { ev.preventDefault(); pageStep(ev.key === 'ArrowLeft' ? -1 : 1); }
+    else if (ev.key === ',' || ev.key === '.') {
+      state.cursor = Math.min(state.pageStart + state.pageLen, Math.max(state.pageStart, state.cursor + (ev.key === ',' ? -.2 : .2))); render();
+    } else if (ev.key === 'ArrowUp' || ev.key === 'ArrowDown') {
+      ev.preventDefault();
+      // Up makes traces larger: a lower µV/mm value.
+      const i = Math.min(SENS.length - 1, Math.max(0, SENS.indexOf(state.sens) + (ev.key === 'ArrowUp' ? -1 : 1)));
+      state.sens = SENS[i]; state.sensAuto = false; $('sens').value = String(state.sens); render();
+    }
+  });
+}
+
+initControls();
+buildTimeline();
+setReduced(state.reduced);
+render();
+</script>
+</body>
+</html>

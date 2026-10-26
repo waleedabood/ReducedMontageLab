@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reduced Montage Lab</title>
+  <meta name="description" content="Compare a full 10-20 longitudinal bipolar EEG with reduced bipolar montages (subhairline band, frontal only, behind the ear) on one synchronized synthetic recording.">
+  <link rel="icon" href="src/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="src/style.css">
+</head>
+<body>
+  <header class="bar">
+    <div class="brand">
+      <img src="src/favicon.svg" alt="" width="24" height="24">
+      <h1>Reduced Montage Lab</h1>
+    </div>
+    <button class="btn primary" id="play" type="button" aria-keyshortcuts="Space">Play</button>
+    <div class="seg" role="radiogroup" aria-label="Reduced montage" id="montages"></div>
+    <label>Jump to
+      <select id="chapter"></select>
+    </label>
+    <label>Display
+      <select id="mode">
+        <option value="page">Page + sweeper</option>
+        <option value="sweep">Live sweep</option>
+      </select>
+    </label>
+    <label>Page
+      <select id="page">
+        <option value="5">5 s</option>
+        <option value="10" selected>10 s</option>
+        <option value="15">15 s</option>
+        <option value="20">20 s</option>
+      </select>
+    </label>
+    <label>Sens
+      <select id="sens">
+        <option value="3">3 µV/mm</option>
+        <option value="5">5 µV/mm</option>
+        <option value="7" selected>7 µV/mm</option>
+        <option value="10">10 µV/mm</option>
+        <option value="15">15 µV/mm</option>
+        <option value="20">20 µV/mm</option>
+      </select>
+    </label>
+    <label>Speed
+      <select id="speed">
+        <option value="0.5">0.5×</option>
+        <option value="1" selected>1×</option>
+        <option value="2">2×</option>
+      </select>
+    </label>
+    <label class="check"><input type="checkbox" id="events" checked> Events</label>
+
+    <div class="menus">
+      <details class="menu" id="menu-capture">
+        <summary class="btn">Captures</summary>
+        <div class="panel wide">
+          <h3>What reaches the reduced montage</h3>
+          <p class="sub">Largest deflection of each pattern alone (background removed), in the best channel of each montage. Numbers come from the model.</p>
+          <div class="bars" id="bars"></div>
+        </div>
+      </details>
+      <details class="menu" id="menu-notes">
+        <summary class="btn">Montage notes</summary>
+        <div class="panel wide">
+          <h3 id="notes-title"></h3>
+          <p class="sub" id="placement"></p>
+          <ul id="note-list"></ul>
+        </div>
+      </details>
+      <details class="menu" id="menu-help">
+        <summary class="btn">Help</summary>
+        <div class="panel">
+          <h3>How to use</h3>
+          <ul>
+            <li><strong>Sweeper:</strong> the red line is shared by both montages. Click or drag in either to move it; hover to see a dashed guide at the same instant in the other.</li>
+            <li><strong>Channels:</strong> hover a channel to light up its electrode pair on the head map.</li>
+            <li><strong>Overview strip:</strong> click to seek; coloured marks are blinks (blue), eye opening/closure (amber) and spindles (green).</li>
+            <li><strong>Keys:</strong> Space play/pause · ←/→ previous/next page · ,/. nudge the sweeper 0.2 s · ↑/↓ sensitivity.</li>
+            <li>Both montages share sensitivity and time base, so equal deflections are equal voltages. Negative is up.</li>
+          </ul>
+          <h3>The recording</h3>
+          <ul id="chapter-list"></ul>
+          <p class="sub disclaimer">Educational simulation with synthetic signals · no patient data · not for clinical use · electrode positions are idealized · a companion to EEGSimLab.</p>
+        </div>
+      </details>
+    </div>
+    <button class="btn ghost" id="theme" type="button" aria-label="Switch to dim room theme">Dim</button>
+    <output id="clock" class="clock">0.0 s</output>
+  </header>
+
+  <div class="timeline" id="timeline" role="slider" tabindex="0" aria-label="Position in the 64-second recording" aria-valuemin="0" aria-valuemax="64" aria-valuenow="0">
+    <div class="window" id="timeline-window"></div>
+    <div class="playhead" id="timeline-head"></div>
+  </div>
+
+  <main class="split" id="split">
+    <section class="pane" id="pane-full" aria-label="Full montage">
+      <header class="pane-head">
+        <div class="head-map" aria-hidden="true"></div>
+        <h2></h2>
+        <p class="meta"></p>
+      </header>
+      <div class="canvas-wrap"><canvas role="img"></canvas></div>
+    </section>
+    <div class="splitter" id="splitter" role="separator" tabindex="0" aria-orientation="horizontal" aria-label="Resize the two montages" aria-valuemin="35" aria-valuemax="80" aria-valuenow="62"></div>
+    <section class="pane" id="pane-reduced" aria-label="Reduced montage">
+      <header class="pane-head">
+        <div class="head-map" aria-hidden="true"></div>
+        <h2></h2>
+        <p class="meta"></p>
+      </header>
+      <div class="canvas-wrap"><canvas role="img"></canvas></div>
+    </section>
+  </main>
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>
